@@ -29,6 +29,9 @@ Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS)
 
 char buf[17];
 const char* hari[7] = { "Ming", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab" };
+char key;
+
+uint8_t set_menit = 0;
 
 int main() {
   init();
@@ -74,8 +77,28 @@ void tampil_home() {
 
 void tampil_set() {
   lcd.clear();
-  lcd.print("MASUK MENU");
-  _delay_ms(200);
+  lcd.setCursor(2, 0);
+  lcd.print("SETTING ALARM");
+
+  do {
+    key = customKeypad.getKey();
+    if (key >= '0' && key <= '9') 
+      set_menit = set_menit * 10 + (key - '0');
+    if(key == '#') set_menit = 0;
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Jam: %.2d:%.2d:", rtc.hour(), set_menit);
+      lcd.print(buf);
+    
+  } while (key != '*');
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("SAVING MENIT");
+  for(byte i =0; i< 16; i++){
+    lcd.setCursor(i,1);
+    lcd.print("=");
+    _delay_ms(20);
+  }
   lcd.clear();
   mode = HOME;
 }

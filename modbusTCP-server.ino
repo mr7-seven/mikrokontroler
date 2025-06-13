@@ -4,7 +4,7 @@
 #include <WiFi.h>
 #endif
 #include <ModbusIP_ESP8266.h>
-
+ 
 //Modbus Registers Offsets
 const int LED_COIL = 100;
 const int SENSOR_IREG = 100;

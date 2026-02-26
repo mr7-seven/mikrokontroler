@@ -1,0 +1,91 @@
+
+bool pb, last_pb;
+int led = 0;
+unsigned long waktu = 0;
+
+typedef enum {
+  IDLE,
+  RED,
+  YELLOW,
+  GREEN,
+  RELAY
+} Lampu;
+
+Lampu lampu = IDLE;
+
+int main() {
+  init();
+  DDRD &= ~(1 << PD2);
+  PORTD |= (1 << PD2);
+  DDRD |= (1 << PD3) | (1 << PD4) | (1 << PD5) | (1 << PD6);
+
+  while (1) {
+
+    switch (lampu) {
+      case IDLE:
+        MERAH_OFF();
+        KUNING_OFF();
+        HIJAU_OFF();
+
+        pb = !(PIND & (1 << PD2));
+
+        if (pb && !last_pb) {
+          _delay_ms(50);
+          lampu = RED;
+          waktu = millis();
+          MERAH_ON();
+        }
+        last_pb = pb;
+        break;
+      case RED:
+        if (millis() - waktu >= 1000) {
+          MERAH_OFF();
+          KUNING_ON();
+          waktu = millis();
+          lampu = YELLOW;
+        }
+        break;
+      case YELLOW:
+        if (millis() - waktu >= 1000) {
+          KUNING_OFF();
+          HIJAU_ON();
+          waktu = millis();
+          lampu = GREEN;
+        }
+        break;
+      case GREEN:
+        if (millis() - waktu >= 1000) {
+          HIJAU_OFF();
+          waktu = millis();
+          RELAY_ON();
+          lampu = IDLE;
+        }
+        break;
+    }
+  }
+
+  return 0;
+}
+
+void MERAH_ON() {
+  PORTD |= (1 << PD5);
+}
+void KUNING_ON() {
+  PORTD |= (1 << PD4);
+}
+void HIJAU_ON() {
+  PORTD |= (1 << PD3);
+}
+void RELAY_ON() {
+  PORTD |= (1 << PD6);
+}
+
+void MERAH_OFF() {
+  PORTD &= ~(1 << PD5);
+}
+void KUNING_OFF() {
+  PORTD &= ~(1 << PD4);
+}
+void HIJAU_OFF() {
+  PORTD &= ~(1 << PD3);
+}

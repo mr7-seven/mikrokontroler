@@ -1,5 +1,6 @@
 
 bool pb, last_pb;
+bool pb1, last_pb1;
 int led = 0;
 unsigned long waktu = 0;
 
@@ -15,8 +16,8 @@ Lampu lampu = IDLE;
 
 int main() {
   init();
-  DDRD &= ~(1 << PD2);
-  PORTD |= (1 << PD2);
+  DDRD &= ~((1 << PD1) | (1 << PD2));
+  PORTD |= (1 << PD1) | (1 << PD2);
   DDRD |= (1 << PD3) | (1 << PD4) | (1 << PD5) | (1 << PD6);
 
   while (1) {
@@ -36,6 +37,7 @@ int main() {
           MERAH_ON();
         }
         last_pb = pb;
+
         break;
       case RED:
         if (millis() - waktu >= 1000) {
@@ -58,8 +60,18 @@ int main() {
           HIJAU_OFF();
           waktu = millis();
           RELAY_ON();
+          lampu = RELAY;
+        }
+        break;
+      case RELAY:
+        pb1 = !(PIND & (1 << PD1));
+
+        if (!pb1 && last_pb1) {
+          _delay_ms(50);
+          RELAY_OFF();
           lampu = IDLE;
         }
+        last_pb1 = pb1;
         break;
     }
   }
@@ -78,6 +90,9 @@ void HIJAU_ON() {
 }
 void RELAY_ON() {
   PORTD |= (1 << PD6);
+}
+void RELAY_OFF() {
+  PORTD &= ~(1 << PD6);
 }
 
 void MERAH_OFF() {

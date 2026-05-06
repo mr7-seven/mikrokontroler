@@ -2,7 +2,8 @@
 #define LPWM_PIN 6
 
 #define X_AXIS_PIN A0
-#define SW_PIN 2
+#define SW_PIN 2          // IR SENSOR
+#define BUZZER_PIN x
 
 const int DEADZONE = 40;
 const int JOY_CENTER = 512;
@@ -19,8 +20,7 @@ int targetSpeed = 0;
 
 float currentSpeed = 0;
 
-bool sw;
-bool last_sw = false;
+bool irDetected = false;
 
 bool reversing = false;
 
@@ -28,8 +28,15 @@ unsigned long reverseTimer = 0;
 unsigned long lastUpdate = 0;
 unsigned long serialTimer = 0;
 
-int main(){
+// beep non blocking
+bool buzzerState = false;
+unsigned long buzzerTimer = 0;
+const int BEEP_INTERVAL = 150;
+
+int main() {
+
   init();
+
   Serial.begin(9600);
 
   pinMode(RPWM_PIN, OUTPUT);
@@ -37,36 +44,33 @@ int main(){
 
   pinMode(SW_PIN, INPUT_PULLUP);
 
+  pinMode(BUZZER_PIN, OUTPUT);
+
   lastUpdate = millis();
   serialTimer = millis();
 
   motor(0);
-  
-  while(1){
-  bacaPushButton();
 
-  bacaJoystick();
+  while (1) {
 
-  updateMotor();
+    bacaIR();
 
-  serialMonitor();
-	  
+    bacaJoystick();
+
+    updateMotor();
+
+    updateBuzzer();
+
+    serialMonitor();
   }
-	
-	return 0;
+
+  return 0;
 }
 
+void bacaIR() {
 
-void bacaPushButton() {
-
-  sw = !digitalRead(SW_PIN);
-
-  if (sw && !last_sw) {
-
-    requestedSpeed = 0;
-  }
-
-  last_sw = sw;
+  // sesuaikan HIGH/LOW tergantung modul IR
+  irDetected = !digitalRead(SW_PIN);
 }
 
 void bacaJoystick() {
@@ -90,6 +94,11 @@ void bacaJoystick() {
   float expo = normalized * abs(normalized);
 
   requestedSpeed = expo * 255;
+
+  // jika IR detect objek → paksa stop
+  if (irDetected) {
+    requestedSpeed = 0;
+  }
 }
 
 void updateMotor() {
@@ -97,6 +106,19 @@ void updateMotor() {
   if (millis() - lastUpdate < 20) return;
 
   lastUpdate += 20;
+
+  // jika IR detect 
+  if (irDetected) {
+
+    currentSpeed += (0 - currentSpeed) * BRAKE_RATE;
+
+    if (abs(currentSpeed) < 2) {
+      currentSpeed = 0;
+    }
+
+    motor((int)currentSpeed);
+    return;
+  }
 
   bool bedaArah =
     (currentSpeed > 0 && requestedSpeed < 0) ||
@@ -149,6 +171,25 @@ void updateMotor() {
   motor((int)currentSpeed);
 }
 
+void updateBuzzer() {
+
+  if (!irDetected) {
+
+    digitalWrite(BUZZER_PIN, LOW);
+    buzzerState = false;
+    return;
+  }
+
+  if (millis() - buzzerTimer >= BEEP_INTERVAL) {
+
+    buzzerTimer = millis();
+
+    buzzerState = !buzzerState;
+
+    digitalWrite(BUZZER_PIN, buzzerState);
+  }
+}
+
 void motor(int speed) {
 
   speed = constrain(speed, -255, 255);
@@ -160,8 +201,8 @@ void motor(int speed) {
   if (speed > 0) {
 
     speed = map(speed, 1, 255, MIN_PWM, 255);
-  }
-  else if (speed < 0) {
+
+  } else if (speed < 0) {
 
     speed = -map(-speed, 1, 255, MIN_PWM, 255);
   }
@@ -170,13 +211,13 @@ void motor(int speed) {
 
     analogWrite(RPWM_PIN, speed);
     analogWrite(LPWM_PIN, 0);
-  }
-  else if (speed < 0) {
+
+  } else if (speed < 0) {
 
     analogWrite(RPWM_PIN, 0);
     analogWrite(LPWM_PIN, -speed);
-  }
-  else {
+
+  } else {
 
     analogWrite(RPWM_PIN, 0);
     analogWrite(LPWM_PIN, 0);
@@ -189,11 +230,11 @@ void serialMonitor() {
 
   serialTimer += 100;
 
-  Serial.print("Req: ");
-  Serial.print(requestedSpeed);
+  Serial.print("IR: ");
+  Serial.print(irDetected);
 
-  Serial.print("  Target: ");
-  Serial.print(targetSpeed);
+  Serial.print("  Req: ");
+  Serial.print(requestedSpeed);
 
   Serial.print("  Current: ");
   Serial.print((int)currentSpeed);

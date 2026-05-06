@@ -28,9 +28,9 @@ unsigned long reverseTimer = 0;
 unsigned long lastUpdate = 0;
 unsigned long serialTimer = 0;
 
-void setup() {
-
-  Serial.begin(115200);
+int main(){
+  init();
+  Serial.begin(9600);
 
   pinMode(RPWM_PIN, OUTPUT);
   pinMode(LPWM_PIN, OUTPUT);
@@ -41,10 +41,8 @@ void setup() {
   serialTimer = millis();
 
   motor(0);
-}
-
-void loop() {
-
+  
+  while(1){
   bacaPushButton();
 
   bacaJoystick();
@@ -52,7 +50,12 @@ void loop() {
   updateMotor();
 
   serialMonitor();
+	  
+  }
+	
+	return 0;
 }
+
 
 void bacaPushButton() {
 

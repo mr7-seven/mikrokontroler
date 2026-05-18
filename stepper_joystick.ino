@@ -1,6 +1,5 @@
 #include <AccelStepper.h>
 
-// ===================== PIN =====================
 const byte STEP_PIN = 3;
 const byte DIR_PIN  = 2;
 
@@ -11,42 +10,36 @@ const byte X_PIN = A1;
 const byte LDR_PIN = A2;
 const byte BUZZER_PIN = 8;
 
-// ===================== LIMIT POSISI =====================
 const long POS_MIN = 0;
 const long POS_MAX = 2000;
 
-// ===================== FILTER JOYSTICK =====================
 float xFiltered = 512.0f;
 
 const float FILTER_ALPHA = 0.10f;
 const int DEADZONE = 50;
 
-// ===================== CONTROL =====================
 const float JOY_THRESHOLD = 3.0f;
 
 const int STEP_SPEED = 800;
 const int STEP_ACCEL = 300;
 
-// ===================== STEPPER =====================
 AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
-// ===================== STATE =====================
 long lastTarget = 0;
 
 unsigned long lastRead = 0;
 const uint16_t READ_INTERVAL = 20;
 
-// ===================== BUZZER =====================
 bool buzzerState = false;
 unsigned long lastBuzzerToggle = 0;
 const uint16_t BUZZER_INTERVAL = 150;
 
 const int LDR_THRESHOLD = 750;
 
-// =====================================================
 
-void setup() {
-  Serial.begin(115200);
+int main() {
+	init();
+	  Serial.begin(9600);
 
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
@@ -55,18 +48,12 @@ void setup() {
   stepper.setAcceleration(STEP_ACCEL);
 
   stepper.setCurrentPosition(1000); // start di tengah
-}
+  
+  while(1){
+	    unsigned long now = millis();
 
-// =====================================================
-
-void loop() {
-
-  unsigned long now = millis();
-
-  // ===================== NON-BLOCKING STEP =====================
   stepper.run();
 
-  // ===================== JOYSTICK READ =====================
   if (now - lastRead >= READ_INTERVAL) {
     lastRead = now;
 
@@ -92,7 +79,6 @@ void loop() {
     }
   }
 
-  // ===================== LDR + BUZZER =====================
   int ldrValue = analogRead(LDR_PIN);
   bool laserDetected = ldrValue > LDR_THRESHOLD;
 
@@ -106,4 +92,8 @@ void loop() {
     buzzerState = false;
     digitalWrite(BUZZER_PIN, LOW);
   }
+  }
+
+
+  return 0;
 }

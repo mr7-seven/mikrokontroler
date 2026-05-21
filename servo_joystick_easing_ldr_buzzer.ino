@@ -48,6 +48,7 @@ unsigned long lastBuzzerToggle = 0;
 const uint16_t BUZZER_INTERVAL = 150;
 
 int main() {
+  init();
   Serial.begin(115200);
 
   panServo.attach(PAN_PIN, 90);

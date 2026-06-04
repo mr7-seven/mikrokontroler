@@ -1,0 +1,88 @@
+#include <AccelStepper.h>
+
+#define DIR_PIN     3
+#define STEP_PIN    4
+
+#define KIRI_PIN    6
+#define KANAN_PIN   7
+
+#define IR_PIN      5
+#define BUZZER_PIN  8
+
+AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
+
+bool kiri, last_kiri;
+bool kanan, last_kanan;
+
+bool lastIRState = false;
+
+uint8_t deteksiCount = 0;
+bool buzzerAktif = false;
+
+// Blink buzzer 
+bool buzzerState = false;
+unsigned long lastBlink = 0;
+const unsigned long blinkInterval = 200;
+
+int main() {
+  init();
+  Serial.begin(115200);
+
+  pinMode(KIRI_PIN, INPUT_PULLUP);
+  pinMode(KANAN_PIN, INPUT_PULLUP);
+
+  pinMode(IR_PIN, INPUT_PULLUP);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  stepper.setMaxSpeed(1000);
+  stepper.setAcceleration(500);
+  while(1){
+  stepper.run();
+
+  // Tombol kiri
+  kiri = !digitalRead(KIRI_PIN);
+  if (kiri && !last_kiri) {
+    stepper.move(-200);
+  }
+  last_kiri = kiri;
+
+  // Tombol kanan
+  kanan = !digitalRead(KANAN_PIN);
+  if (kanan && !last_kanan) {
+    stepper.move(200);
+  }
+  last_kanan = kanan;
+
+  // Sensor IR
+  bool irDetected = !digitalRead(IR_PIN);
+
+  if (irDetected && !lastIRState) {
+
+    deteksiCount++;
+
+    Serial.print("Deteksi ke-");
+    Serial.println(deteksiCount);
+
+    if (deteksiCount >= 5) {
+      buzzerAktif = true;
+      Serial.println("TARGET 5 DETEKSI TERCAPAI");
+    }
+  }
+
+  lastIRState = irDetected;
+
+  // Buzzer 
+  if (buzzerAktif) {
+
+    if (millis() - lastBlink >= blinkInterval) {
+      lastBlink = millis();
+
+      buzzerState = !buzzerState;
+      digitalWrite(BUZZER_PIN, buzzerState);
+    }
+  }
+
+  }
+
+  return 0;
+}
